@@ -7,7 +7,7 @@ import java.sql.*;
 import java.util.Collection;
 import java.util.LinkedList;
 
-class HsqldbUserDao implements UserDao{
+class HsqldbUserDao implements UserDao {
     private static final String CALL_IDENTITY = "call IDENTITY()";
     private static final String CREATE_USER_QUERY = "INSERT INTO users (firstname, lastname, dateofbirth) VALUES (?, ?, ?)";
     private static final String SELECT_ALL_USERS = "SELECT id, firstname, lastname, dateofbirth FROM users";
@@ -33,9 +33,10 @@ class HsqldbUserDao implements UserDao{
     public HsqldbUserDao() {
     }
 
-    private void setConnection() throws DatabaseException{
-        if(myConnection == null)
+    private void setConnection() throws DatabaseException {
+        if (null == myConnection) {
             this.myConnection = this.connectionFactory.getConnection(new String(), new String(), new String());
+        }
     }
 
     @Override
@@ -48,8 +49,8 @@ class HsqldbUserDao implements UserDao{
             e.printStackTrace();
         }
 
-        try(PreparedStatement my_statement = myConnection.prepareStatement(CREATE_USER_QUERY);
-            CallableStatement my_callable_statement = myConnection.prepareCall(CALL_IDENTITY)) {
+        try (PreparedStatement my_statement = myConnection.prepareStatement(CREATE_USER_QUERY);
+             CallableStatement my_callable_statement = myConnection.prepareCall(CALL_IDENTITY)) {
 
             my_statement.setString(1, userToInsert.getFirstName());
             my_statement.setString(2, userToInsert.getLastName());
@@ -65,8 +66,7 @@ class HsqldbUserDao implements UserDao{
 
             if (keys.next()) {
                 userToInsert.setId(new Integer(keys.getInt(1)));
-            }
-            else {
+            } else {
                 throw new DatabaseException("There are no rows in a query result set!");
             }
 
@@ -74,8 +74,7 @@ class HsqldbUserDao implements UserDao{
         } catch (SQLException e) {
             e.printStackTrace();
             throw new DatabaseException();
-        }
-        catch (DatabaseException e) {
+        } catch (DatabaseException e) {
             e.printStackTrace();
             throw e;
         }
@@ -99,7 +98,7 @@ class HsqldbUserDao implements UserDao{
             e.printStackTrace();
         }
 
-        try(PreparedStatement my_statement = myConnection.prepareStatement(DELETE_USER)) {
+        try (PreparedStatement my_statement = myConnection.prepareStatement(DELETE_USER)) {
 
             my_statement.setInt(1, Math.toIntExact(userToDelete.getId()));
 
@@ -107,14 +106,12 @@ class HsqldbUserDao implements UserDao{
 
             if (rowsAffected != 1) {
                 throw new DatabaseException("Number of the deleted rows: " + rowsAffected);
-            }
-            else return true;
+            } else return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
             throw new DatabaseException();
-        }
-        catch (DatabaseException e) {
+        } catch (DatabaseException e) {
             e.printStackTrace();
             throw e;
         }
@@ -131,7 +128,7 @@ class HsqldbUserDao implements UserDao{
             e.printStackTrace();
         }
 
-        try(PreparedStatement get_user_statement = myConnection.prepareStatement(FIND_USER) ) {
+        try (PreparedStatement get_user_statement = myConnection.prepareStatement(FIND_USER)) {
 
             get_user_statement.setInt(1, Math.toIntExact(id));
 
@@ -165,7 +162,7 @@ class HsqldbUserDao implements UserDao{
             e.printStackTrace();
         }
 
-        try(Statement get_users_statement = myConnection.createStatement() ) {
+        try (Statement get_users_statement = myConnection.createStatement()) {
 
             ResultSet usersSet = get_users_statement.executeQuery(SELECT_ALL_USERS);
 
@@ -196,11 +193,11 @@ class HsqldbUserDao implements UserDao{
             e.printStackTrace();
         }
 
-        try(PreparedStatement my_statement = myConnection.prepareStatement(UPDATE_USER)) {
+        try (PreparedStatement my_statement = myConnection.prepareStatement(UPDATE_USER)) {
 
             my_statement.setInt(1, Math.toIntExact(userToUpdate.getId()));
-            my_statement.setString(2, userToUpdate.getFirstName() );
-            my_statement.setString(3, userToUpdate.getLastName() );
+            my_statement.setString(2, userToUpdate.getFirstName());
+            my_statement.setString(3, userToUpdate.getLastName());
             my_statement.setDate(4, new java.sql.Date(userToUpdate.getDob().getTime()));
             my_statement.setInt(5, Math.toIntExact(userToUpdate.getId()));
 
@@ -208,14 +205,12 @@ class HsqldbUserDao implements UserDao{
 
             if (rowsAffected != 1) {
                 throw new DatabaseException("Number of the updated rows: " + rowsAffected);
-            }
-            else return true;
+            } else return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
             throw new DatabaseException();
-        }
-        catch (DatabaseException e) {
+        } catch (DatabaseException e) {
             e.printStackTrace();
             throw e;
         }

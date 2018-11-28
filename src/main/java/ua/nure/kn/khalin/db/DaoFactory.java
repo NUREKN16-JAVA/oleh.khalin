@@ -8,7 +8,7 @@ public class DaoFactory {
     public static final String PASSWORD = "connection.password";
     public static final String URL = "connection.url";
     public static final String DRIVER = "connection.driver";
-    public static final String USER_DAO = "ua.nure.vraniuk.usermanagement.db.UserDao";
+    public static final String USER_DAO = "main.java.ua.nure.kn.khalin.db.UserDao";
 
     public String user_property;
     public String password_property;
@@ -48,11 +48,11 @@ public class DaoFactory {
     }
 
     public UserDao getUserDao() throws DatabaseException{
-        Class clazz;
+        Class buff;
         UserDao userDao = null;
         try {
-            clazz = Class.forName(user_dao_class_property);
-            userDao = (UserDao) clazz.newInstance();
+            buff = Class.forName(user_dao_class_property);
+            userDao = (UserDao) buff.newInstance();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {

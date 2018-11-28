@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class CustomConnectionFactory implements ConnectionFactory{
+public class CustomConnectionFactory implements ConnectionFactory {
     public String driver =
             "org.hsqldb.jdbcDriver";
     public String dburl =
@@ -13,27 +13,34 @@ public class CustomConnectionFactory implements ConnectionFactory{
     public String password = "";
 
     public CustomConnectionFactory(String url, String user, String password, String driver) throws DatabaseException {
-        if (!url.isEmpty())
+        if (!url.isEmpty()) {
             dburl = url;
-        if (!user.isEmpty())
+        }
+        if (!user.isEmpty()) {
             this.user = user;
-        if (!password.isEmpty())
+        }
+        if (!password.isEmpty()) {
             this.password = password;
-        if (!driver.isEmpty())
+        }
+        if (!driver.isEmpty()) {
             this.driver = driver;
+        }
     }
 
     public CustomConnectionFactory() throws DatabaseException {
     }
 
     @Override
-    public Connection getConnection(String url, String user, String password ) throws DatabaseException {
-        if (!url.isEmpty())
+    public Connection getConnection(String url, String user, String password) throws DatabaseException {
+        if (!url.isEmpty()) {
             this.dburl = url;
-        if (!user.isEmpty())
+        }
+        if (!user.isEmpty()) {
             this.user = user;
-        if (!password.isEmpty())
+        }
+        if (!password.isEmpty()) {
             this.password = password;
+        }
         Connection my_connection = null;
         try {
             Class.forName(this.driver);
