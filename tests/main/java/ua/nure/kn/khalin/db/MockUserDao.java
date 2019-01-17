@@ -45,6 +45,11 @@ public class MockUserDao implements UserDao {
     }
 
     @Override
+    public Collection findByName(String firstName, String lastName) {
+        throw new UnsupportedOperationException("This operation is not supported by this class.");
+    }
+
+    @Override
     public void setConnectionFactory(ConnectionFactory connectionFactory) {
 
     }

@@ -15,6 +15,9 @@ class HsqlUserDao implements UserDao{
     private static final String UPDATE_USER = "UPDATE users " +
             "SET id = ?,firstname = ?, lastname = ?, dateofbirth = ? " +
             "WHERE id = ?";
+    private static final String FIND_BY_NAME = "SELECT id, firstname, lastname, dateofbirth" +
+            " FROM users " +
+            "WHERE firstname=? AND lastname=?";
 
     private ConnectionFactory connectionFactory;
 
@@ -52,7 +55,7 @@ class HsqlUserDao implements UserDao{
 
             my_statement.setString(1, userToInsert.getFirstName());
             my_statement.setString(2, userToInsert.getLastName());
-            my_statement.setDate(3, new java.sql.Date(userToInsert.getDob().getTime()));
+            my_statement.setDate(3, new java.sql.Date(userToInsert.getDateOfBirth().getTime()));
 
             rowsInserted = my_statement.executeUpdate();
 
@@ -183,6 +186,41 @@ class HsqlUserDao implements UserDao{
             e.printStackTrace();
             throw new DatabaseException();
         }
+        return resultUsers;
+    }
+
+    @Override
+    public Collection findByName(String firstName, String lastName) {
+        Collection resultUsers = new LinkedList();
+
+        //check if connection is not null
+        try {
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            PreparedStatement find_by_name_statement = myConnection.prepareStatement(FIND_BY_NAME);
+            find_by_name_statement.setString(1, firstName);
+            find_by_name_statement.setString(2, lastName);
+            ResultSet resultFindByName = find_by_name_statement.executeQuery();
+
+            while(resultFindByName.next())
+            {
+                User buff = new User();
+                buff.setId(resultFindByName.getLong(1));
+                buff.setFirstName(resultFindByName.getString(2));
+                buff.setLastName(resultFindByName.getString(3));
+                buff.setDateOfBirth(resultFindByName.getDate(4));
+                ((LinkedList) resultUsers).push(buff);
+
+                buff = new User();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         return resultUsers;
     }
 
