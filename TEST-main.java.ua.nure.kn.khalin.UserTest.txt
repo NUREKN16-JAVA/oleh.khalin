@@ -1,0 +1,6 @@
+Testsuite: main.java.ua.nure.kn.khalin.UserTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0,094 sec
+
+Testcase: is_full_name_returned took 0,001 sec
+Testcase: is_age_zero_when_dob_today took 0,077 sec
+Testcase: is_returned_age_correct took 0,002 sec

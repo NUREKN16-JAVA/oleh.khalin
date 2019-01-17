@@ -11,7 +11,7 @@ import java.util.Objects;
 public class User implements Serializable {
 
     private static final long serialVersionUID = 280401130384252681L;
-    private int id;
+    private Long id;
     private String firstName;
     private String lastName;
     private Date dob;
@@ -19,7 +19,7 @@ public class User implements Serializable {
     public User() {
     }
 
-    public User(int id, String firstName, String lastName, Date dob) {
+    public User(Long id, String firstName, String lastName, Date dob) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -37,11 +37,11 @@ public class User implements Serializable {
                 .getYears();
     }
 
-    public int getId() {
+    public Long getId() {
         return this.id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
