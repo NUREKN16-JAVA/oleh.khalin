@@ -6,159 +6,217 @@ import java.sql.*;
 import java.util.Collection;
 import java.util.LinkedList;
 
-class HsqlUserDao implements UserDao {
+class HsqlUserDao implements UserDao{
+    private static final String CALL_IDENTITY = "call IDENTITY()";
+    private static final String CREATE_USER_QUERY = "INSERT INTO users (firstname, lastname, dateofbirth) VALUES (?, ?, ?)";
+    private static final String SELECT_ALL_USERS = "SELECT * FROM users";
+    private static final String FIND_USER = "SELECT * FROM users WHERE id = ?";
+    private static final String DELETE_USER = "DELETE FROM users WHERE id = ?";
+    private static final String UPDATE_USER = "UPDATE users " +
+            "SET id = ?,firstname = ?, lastname = ?, dateofbirth = ? " +
+            "WHERE id = ?";
 
-    private static final String SELECT_ALL_QUERY = "SELECT id, first_name, last_name, date_of_birth FROM users";
-    private static final String SELECT_ONE_QUERY = "SELECT id, first_name, last_name, date_of_birth FROM users WHERE id = (?)";
-    private static final String INSERT_QUERY = "INSERT INTO users (first_name, last_name, date_of_birth) VALUES (?, ?, ?)";
-    private static final String UPDATE_QUERY = "UPDATE users SET first_name = (?), last_name = (?), date_of_birth = (?) WHERE id = (?)";
-    private static final String DELETE_QUERY = "DELETE FROM users WHERE id = (?)";
     private ConnectionFactory connectionFactory;
+
+    private Connection myConnection;
+
+    public HsqlUserDao(ConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+        try {
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
+    }
 
     public HsqlUserDao() {
     }
 
-    public HsqlUserDao(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    private void setConnection() throws DatabaseException{
+        if(myConnection == null)
+            this.myConnection = this.connectionFactory.getConnection(new String(), new String(), new String());
     }
 
-    public void setConnectionFactory(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    @Override
+    public User create(User userToInsert) throws DatabaseException {
+        int rowsInserted = 0;
+
+        try {
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
+
+        try(PreparedStatement my_statement = myConnection.prepareStatement(CREATE_USER_QUERY);
+            CallableStatement my_callable_statement = myConnection.prepareCall(CALL_IDENTITY)) {
+
+            my_statement.setString(1, userToInsert.getFirstName());
+            my_statement.setString(2, userToInsert.getLastName());
+            my_statement.setDate(3, new java.sql.Date(userToInsert.getDob().getTime()));
+
+            rowsInserted = my_statement.executeUpdate();
+
+            if (rowsInserted != 1) {
+                throw new DatabaseException("Number of the inserted rows: " + rowsInserted);
+            }
+
+            ResultSet keys = my_callable_statement.executeQuery();
+
+            if (keys.next()) {
+                userToInsert.setId(new Long(keys.getLong(1)));
+            }
+            else {
+                throw new DatabaseException("There are no rows in a query result set!");
+            }
+
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new DatabaseException();
+        }
+        catch (DatabaseException e) {
+            e.printStackTrace();
+            throw e;
+        }
+        return userToInsert;
     }
 
     public ConnectionFactory getConnectionFactory() {
         return connectionFactory;
     }
 
-    @Override
-    public User create(User user) throws DatabaseException {
-        try {
-            Connection connection = this.connectionFactory.createConnection();
-
-            PreparedStatement statement = connection.prepareStatement(INSERT_QUERY);
-            statement.setString(1, user.getFirstName());
-            statement.setString(2, user.getLastName());
-            statement.setDate(3, new Date(user.getDob().getTime()));
-
-            int n = statement.executeUpdate();
-            if (n != 1) {
-                throw new DatabaseException("Num of inserted rows: " + n);
-            }
-
-            CallableStatement callableStatement = connection.prepareCall("call IDENTITY ()");
-            ResultSet keys = callableStatement.executeQuery();
-
-            if (keys.next()) {
-                user.setId(keys.getInt(1));
-            }
-
-            keys.close();
-            callableStatement.close();
-            statement.close();
-            connection.close();
-
-            return user;
-
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
-        }
+    public void setConnectionFactory(ConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 
     @Override
-    public User find(Integer id) throws DatabaseException {
+    public boolean deleteUser(User userToDelete) throws DatabaseException {
+        int rowsAffected = 0;
         try {
-            Connection connection = this.connectionFactory.createConnection();
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
 
-            PreparedStatement statement = connection.prepareStatement(SELECT_ONE_QUERY);
-            statement.setInt(1, id);
-            ResultSet resultSet = statement.executeQuery();
+        try(PreparedStatement my_statement = myConnection.prepareStatement(DELETE_USER)) {
 
-            if (resultSet.next()) {
-                Integer recordId = resultSet.getInt("id");
-                String firstName = resultSet.getString("first_name");
-                String lastName = resultSet.getString("last_name");
-                Date dateOfBirth = resultSet.getDate("date_of_birth");
+            my_statement.setInt(1, Math.toIntExact(userToDelete.getId()));
 
-                if (resultSet.next()) {
-                    throw new DatabaseException("There are more than one user with specified id in the database.");
-                }
+            rowsAffected = my_statement.executeUpdate();
 
-                return new User(recordId, firstName, lastName, dateOfBirth);
-
+            if (rowsAffected != 1) {
+                throw new DatabaseException("Number of the deleted rows: " + rowsAffected);
             }
-
-            throw new DatabaseException("User not found.");
+            else return true;
 
         } catch (SQLException e) {
-            throw new DatabaseException(e);
+            e.printStackTrace();
+            throw new DatabaseException();
         }
+        catch (DatabaseException e) {
+            e.printStackTrace();
+            throw e;
+        }
+
     }
 
     @Override
-    public Collection<User> findAll() throws DatabaseException {
+    public User findUser(Long id) throws DatabaseException {
+        User userToReturn = null;
+
         try {
-            Collection<User> result = new LinkedList<>();
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
 
-            Connection connection = this.connectionFactory.createConnection();
+        try(PreparedStatement get_user_statement = myConnection.prepareStatement(FIND_USER) ) {
 
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(SELECT_ALL_QUERY);
+            get_user_statement.setInt(1, Math.toIntExact(id));
 
-            while (resultSet.next()) {
-                Integer id = resultSet.getInt("id");
-                String firstName = resultSet.getString("first_name");
-                String lastName = resultSet.getString("last_name");
-                Date dateOfBirth = resultSet.getDate("date_of_birth");
+            ResultSet usersSet = get_user_statement.executeQuery();
+            usersSet.next();
 
-                User user = new User(id, firstName, lastName, dateOfBirth);
-                result.add(user);
-            }
+            userToReturn = new User();
 
-            return result;
+            userToReturn.setId(usersSet.getLong(1));
+            userToReturn.setFirstName(usersSet.getString(2));
+            userToReturn.setLastName(usersSet.getString(3));
+            userToReturn.setDateOfBirth(usersSet.getDate(4));
 
         } catch (SQLException e) {
-            throw new DatabaseException(e);
+            e.printStackTrace();
+            throw new DatabaseException();
         }
+
+
+        return userToReturn;
     }
 
     @Override
-    public void update(User user) throws DatabaseException {
+    public Collection findAll() throws DatabaseException {
+        Collection resultUsers = new LinkedList();
+
+        //check if connection is not null
         try {
-            Connection connection = this.connectionFactory.createConnection();
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
 
-            PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY);
-            statement.setString(1, user.getFirstName());
-            statement.setString(2, user.getLastName());
-            statement.setDate(3, new Date(user.getDob().getTime()));
-            statement.setInt(4, user.getId());
+        try(Statement get_users_statement = myConnection.createStatement() ) {
 
-            int n = statement.executeUpdate();
+            ResultSet usersSet = get_users_statement.executeQuery(SELECT_ALL_USERS);
 
-            if (n != 1) {
-                throw new DatabaseException("Num of updated rows: " + n);
+            while (usersSet.next()) {
+                User buffUser = new User();
+
+                buffUser.setId(usersSet.getLong(1));
+                buffUser.setFirstName(usersSet.getString(2));
+                buffUser.setLastName(usersSet.getString(3));
+                buffUser.setDateOfBirth(usersSet.getDate(4));
+
+                ((LinkedList) resultUsers).push(buffUser);
             }
 
         } catch (SQLException e) {
-            throw new DatabaseException(e);
+            e.printStackTrace();
+            throw new DatabaseException();
         }
+        return resultUsers;
     }
 
     @Override
-    public void delete(User user) throws DatabaseException {
+    public boolean updateUser(User userToUpdate) throws DatabaseException {
+        int rowsAffected = 0;
         try {
-            Connection connection = this.connectionFactory.createConnection();
+            setConnection();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
 
-            PreparedStatement statement = connection.prepareStatement(DELETE_QUERY);
-            statement.setInt(1, user.getId());
+        try(PreparedStatement my_statement = myConnection.prepareStatement(UPDATE_USER)) {
 
-            int n = statement.executeUpdate();
+            my_statement.setInt(1, Math.toIntExact(userToUpdate.getId()));
+            my_statement.setString(2, userToUpdate.getFirstName() );
+            my_statement.setString(3, userToUpdate.getLastName() );
+            my_statement.setDate(4, new java.sql.Date(userToUpdate.getDob().getTime()));
+            my_statement.setInt(5, Math.toIntExact(userToUpdate.getId()));
 
-            if (n != 1) {
-                throw new DatabaseException("Num of deleted rows: " + n);
+            rowsAffected = my_statement.executeUpdate();
+
+            if (rowsAffected != 1) {
+                throw new DatabaseException("Number of the updated rows: " + rowsAffected);
             }
+            else return true;
 
         } catch (SQLException e) {
-            throw new DatabaseException(e);
+            e.printStackTrace();
+            throw new DatabaseException();
+        }
+        catch (DatabaseException e) {
+            e.printStackTrace();
+            throw e;
         }
     }
 }
